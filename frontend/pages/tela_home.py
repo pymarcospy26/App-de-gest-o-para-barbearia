@@ -2,7 +2,7 @@ import flet as ft
 import colors as c
 import icons as ic
 import variaveis_globais as vg
-from frontend.pages import tela_atendimentos as ta
+from frontend.widgets_globais import alert_dialogs as diag
 from backend import fluxo_telas as fx
 
 class Tela_Home:
@@ -34,9 +34,17 @@ class Tela_Home:
         self.acesso_rapido = ['Retirada', 'Fiados', 'Angendar']
 
     async def mudar_tela(self, e):
-        atendimento = ta.Tela_Atendimento(self.page)
+        # atendimento = ta.Tela_Atendimento(self.page)  ANTIGA TELA DE ATENDIMEENTO SUBSTITUIDA POR POUP UP
 
-        await fx.mudar_page(self.page, atual = self, nova = await atendimento.add())
+        # await fx.mudar_page(self.page, atual = self, nova = await atendimento.add())
+
+        pass
+
+    async def abrir_atendimento(self, e):
+        alert_dialog = diag.AlertDialog_stepper(self.page, titulo = 'Serviços', text_button = 'Prosseguir')
+        await alert_dialog.inicializar()
+
+        alert_dialog.abrir(e)
 
     async def tela(self):
         self.botao_configuracao = ft.Container(
@@ -282,7 +290,7 @@ class Tela_Home:
                 )
             )
 
-        self.bar_center = ft.Container(
+        self.button_bar_center = ft.Container(
             width = 90,
             height = 90,
             border_radius = 45,
@@ -304,7 +312,7 @@ class Tela_Home:
             ),
 
             ink = True,
-            on_click = self.mudar_tela
+            on_click = self.abrir_atendimento
         )
 
         self.control_bar = ft.Container(
@@ -314,7 +322,7 @@ class Tela_Home:
 
             bgcolor = c.branco,
 
-            shadow = c.shadow_leve(0, -2),
+            shadow = c.shadow_leve(0, -4),
 
             content = ft.Row(
                 alignment = ft.MainAxisAlignment.SPACE_EVENLY,
@@ -342,7 +350,7 @@ class Tela_Home:
                         ]
                     ),
 
-                    self.bar_center,
+                    self.button_bar_center,
 
                     ft.Column(
                         alignment = ft.MainAxisAlignment.CENTER,

@@ -5,8 +5,6 @@ import colors as c
 import unicodedata
 import variaveis_globais as vg
 
-from backend import estado_do_atendimento as cofre
-
 class AlertDialog_stepper:
     def __init__(
         self, page,
@@ -15,6 +13,9 @@ class AlertDialog_stepper:
         self.page = page
         self.titulo = titulo
         self.text_button = text_button
+
+        self.servicos_atendimento = {}
+        self.totais = 0
 
         self.margin_lateral_interna = 25
         self.largura_page = self.page.width
@@ -36,7 +37,7 @@ class AlertDialog_stepper:
         controle = ft.Container(
             expand = True,
             border_radius = 0,
-            border = ft.Border(bottom = ft.BorderSide(width = 0.6, color = c.bordas)),
+            border = ft.Border(bottom = ft.BorderSide(width = 0.04, color = c.preto_icons)),
             margin = ft.Margin(left = self.margin_lateral_interna, right = self.margin_lateral_interna),
                                                                     
             data = {
@@ -48,7 +49,7 @@ class AlertDialog_stepper:
                                                                         
             content = ft.Row(
                 margin = 0,
-                height = 80,
+                height = 84,
                 expand = True,
                 alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
                 vertical_alignment = ft.CrossAxisAlignment.CENTER,
@@ -75,7 +76,7 @@ class AlertDialog_stepper:
                                 max_lines = 1,
                                 value = valors,
                                 overflow = ft.TextOverflow.ELLIPSIS,
-                                style = ft.TextStyle(size = 12, color = c.sub_textos, font_family = 'inter'),
+                                style = ft.TextStyle(size = 14, color = c.preto_icons, font_family = 'inter', weight = ft.FontWeight.W_300),
                             )
                         ]
                     ),
@@ -100,17 +101,10 @@ class AlertDialog_stepper:
 
         for tag in self.armazenamento_tags:
             self.armazenamento_tags[tag].bgcolor = c.branco
-            self.armazenamento_tags[tag].border = ft.Border.all(
-                width = 0.6, color = c.bordas
-            )
             self.armazenamento_tags[tag].content.color = c.textos
-
             self.armazenamento_tags[tag].update()
 
         botao.bgcolor = c.lilas
-        botao.border = ft.Border.all(
-            width = 0, color = ft.Colors.TRANSPARENT
-        )
         botao.content.color = c.branco
 
         botao.update()
@@ -128,8 +122,6 @@ class AlertDialog_stepper:
 
                 else:
                     lista.controls.append(box)
-
-            self.dialog.data['lista'].controls.append(ft.Row(height = 80))
             
             lista.update()
             self.dialog.data['tags'].update()
@@ -152,9 +144,9 @@ class AlertDialog_stepper:
             height = 56,
             bgcolor = c.lilas,
             border_radius = 22,
+            shadow = c.shadow_leve(),
             alignment = ft.Alignment.CENTER,
             padding = ft.Padding(left = 26, right = 26),
-            border = ft.Border.all(width = 0.6, color = c.bordas),
             margin = ft.Margin(left = self.margin_lateral_interna),
                         
             content = ft.Text(
@@ -180,9 +172,9 @@ class AlertDialog_stepper:
                 height = 54,
                 bgcolor = c.branco,
                 border_radius = 22,
+                shadow = c.shadow_leve(),
                 alignment = ft.Alignment.CENTER,
                 padding = ft.Padding(left = 26, right = 26),
-                border = ft.Border.all(width = 0.6, color = c.bordas),
                 data = {
                     'setor': setor
                 },
@@ -204,8 +196,6 @@ class AlertDialog_stepper:
         for setor_reserva, servico, valor in servicos_valors:
             controle = self.adicao_steppers(setor_reserva, servico, valor)
             self.armazenamento_controles[controle.data['servico']] = controle
-
-        self.dialog.data['lista'].controls.append(ft.Row(height = 80))
     
         self.dialog.data['lista'].update()
         self.dialog.data['tags'].update()
@@ -244,16 +234,14 @@ class AlertDialog_stepper:
                 controls = [
                     ic.svg_icon(
                         'not_found_busca',
-                        size = 40, color = c.sub_textos
+                        size = 50, color = c.preto_icons
                     ),
 
                     ft.Text(
                         value = 'Sem resultados\npara essa busca',
-                        size = 14, color = c.sub_textos,
+                        size = 16, color = c.preto_icons,
                         font_family = 'inter', text_align = ft.TextAlign.CENTER
                     ),
-
-                    ft.Row(height = 80)
                 ]
             )
             self.dialog.data['lista'].alignment = ft.MainAxisAlignment.CENTER
@@ -263,90 +251,9 @@ class AlertDialog_stepper:
         
         self.dialog.data['lista'].controls.extend(controles)
 
-    def alertdialog(self):        
-        barra_inferior = ft.Container(
-            left = 0,
-            right = 0,
-            bottom = 0,
-            height = 80,
-            bgcolor = c.branco,
-            shadow = c.shadow_leve(x = 0, y = -2),
-
-            border_radius = ft.BorderRadius(
-                top_left = 0,
-                top_right = 0,
-                bottom_left = 34,
-                bottom_right = 34
-            ),
-
-            content = ft.Row(
-                height = 80,
-                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
-                vertical_alignment = ft.CrossAxisAlignment.END,
-        
-                controls = [
-                    ft.Column(
-                        spacing = 0,
-                        alignment = ft.MainAxisAlignment.CENTER,
-                        horizontal_alignment = ft.CrossAxisAlignment.START,
-        
-                        controls = [
-                            ft.Text(
-                                value = 'Total', margin = ft.Margin(left = self.margin_lateral_interna),
-                                style = ft.TextStyle(size = 14, color = c.sub_textos, font_family = 'inter')
-                            ),
-        
-                            ft.Text(
-                                value = 'R$ 0,00', margin = ft.Margin(left = self.margin_lateral_interna),
-                                style = ft.TextStyle(size = 18, color = c.preto_icons, font_family = 'inter')
-                            ),
-                        ]
-                    ),
-        
-                    ft.Container(
-                        height = 56,
-                        gradient = c.gradiente_top_bottom(c.gradiente_botoes),
-                        margin = ft.Margin(
-                            right = self.margin_lateral_interna,
-                        ),
-                                        
-                        border_radius = 22,
-                        alignment = ft.Alignment.CENTER,
-        
-                        content = ft.Text(
-                            value = self.text_button,
-                            style = ft.TextStyle(
-                                size = 14, color = c.branco, font_family = 'inter',
-                            ),
-
-                            margin = ft.Margin(left = 26, right = 26)
-                        ),
-                    )
-                ]
-            )
-        )
-
-        lista_options = ft.Column(
-            top = 142,
-            left = 0,
-            right = 0,
-            bottom = 0,
-            spacing = 0,
-            expand = True,
-            scroll = ft.ScrollMode.AUTO,
-
-            alignment = ft.MainAxisAlignment.CENTER,
-            horizontal_alignment = ft.CrossAxisAlignment.CENTER,
-
-            controls = [ft.ProgressRing(color = c.lilas_calmo, height = 80, width = 80)]
-        )
-
-        barra_pesquisa = ft.Stack(
-            top = 0,
-            left = 0,
-            right = 0,
-            height = 64,
-
+    def barra_pesquisa(self):
+        return ft.Stack(
+            height = 74,
             alignment = ft.Alignment.CENTER,
 
             controls = [
@@ -356,6 +263,7 @@ class AlertDialog_stepper:
                     expand = True,
                     bgcolor = c.branco,
                     border_radius = 24,
+                    shadow = c.shadow_leve(),
                     
                     margin = ft.Margin(
                         left = self.margin_lateral_interna, right = self.margin_lateral_interna
@@ -368,17 +276,17 @@ class AlertDialog_stepper:
 
                         bgcolor = c.branco,
                         border = ft.Border.all(width = 0.6),
-                        border_color = c.bordas,
+                        border_color = ft.Colors.TRANSPARENT,
                         focused_border_color = c.lilas_calmo,
 
                         text_style = ft.TextStyle(
-                            size = 14, color = c.textos,
+                            size = 16, color = c.textos,
                             font_family = 'inter'
                         ),
 
                         hint_text = 'Buscar servico',
                         hint_style = ft.TextStyle(
-                            size = 14, color = c.sub_textos,
+                            size = 16, color = c.sub_textos,
                             font_family = 'inter'
                         ),
 
@@ -395,10 +303,81 @@ class AlertDialog_stepper:
             ]
         )
 
-        tags_sugestoes = ft.Row(
-            top = 78,
-            left = 0,
-            right = 0,
+    def alertdialog(self):  
+        self.barra_inferior = ft.Container(
+            height = 110,
+            bgcolor = c.branco,
+            shadow = c.shadow_leve(x = 0, y = -4),
+
+            border_radius = ft.BorderRadius(
+                top_left = 0,
+                top_right = 0,
+                bottom_left = 34,
+                bottom_right = 34
+            ),
+
+            content = ft.Row(
+                expand = True,
+                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment = ft.CrossAxisAlignment.CENTER,
+        
+                controls = [
+                    ft.Column(
+                        spacing = 0,
+                        alignment = ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment = ft.CrossAxisAlignment.START,
+        
+                        controls = [
+                            ft.Text(
+                                value = 'Total', margin = ft.Margin(left = self.margin_lateral_interna),
+                                style = ft.TextStyle(size = 14, color = c.sub_textos, font_family = 'inter')
+                            ),
+        
+                            ft.Text(
+                                value = 'R$ 0,00', margin = ft.Margin(left = self.margin_lateral_interna),
+                                style = ft.TextStyle(size = 22, color = c.preto_icons, font_family = 'inter')
+                            ),
+                            
+                            ft.Row(height = 6),
+                        ]
+                    ),
+        
+                    ft.Container(
+                        height = 58,
+                        gradient = c.gradiente_top_bottom(c.gradiente_botoes),
+                        margin = ft.Margin(
+                            right = self.margin_lateral_interna,
+                        ),
+                                        
+                        border_radius = 24,
+                        alignment = ft.Alignment.CENTER,
+        
+                        content = ft.Text(
+                            value = self.text_button,
+                            style = ft.TextStyle(
+                                size = 16, color = c.branco, font_family = 'inter',
+                            ),
+
+                            margin = ft.Margin(left = 26, right = 26)
+                        ),
+                    )
+                ]
+            )
+        )
+        
+        self.lista_options = ft.Column(
+            spacing = 0,
+            expand = True,
+            scroll = ft.ScrollMode.AUTO,
+
+            alignment = ft.MainAxisAlignment.CENTER,
+            horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+
+            controls = [ft.ProgressRing(color = c.lilas_calmo, height = 100, width = 100)]
+        )
+
+        self.tags_sugestoes = ft.Row(
+            margin = ft.Margin(top = 6),
             scroll = ft.ScrollMode.AUTO,
             alignment = ft.MainAxisAlignment.START,
             vertical_alignment = ft.CrossAxisAlignment.CENTER,
@@ -406,19 +385,20 @@ class AlertDialog_stepper:
             controls = []
         )
 
-        return ft.AlertDialog(
+        self.control_alert = ft.AlertDialog(
             modal = False,             #   ATIVAR QUANDO TIVER O BOTÃO DE FECHAR
             expand = True,
-            bgcolor = c.branco,
+            actions_padding = 0,
             content_padding = 0,
+            bgcolor = c.background,
             shape = ft.RoundedRectangleBorder(radius = 34),
-            inset_padding = ft.Padding(left = vg.margin_left, right = vg.margin_right),
+            inset_padding = ft.Padding(left = vg.margin_left, right = vg.margin_right, bottom = 0),
 
             data = {
-                'tags': tags_sugestoes,
-                'lista': lista_options,
-                'barra_inferior': barra_inferior,
-                'barra_pesquisa': barra_pesquisa,
+                'tags': self.tags_sugestoes,
+                'lista': self.lista_options,
+                'barra_inferior': self.barra_inferior,
+                'barra_pesquisa': self.barra_pesquisa,
             },
 
             title = ft.Row(
@@ -428,19 +408,19 @@ class AlertDialog_stepper:
                 controls = [
                     ft.Text(
                         value = self.titulo,
-                        style = ft.TextStyle(size = 18, color = c.textos, font_family = 'inter')
+                        style = ft.TextStyle(size = 22, color = c.preto_icons, font_family = 'inter')
                     ),
 
                     ft.Container(
-                        width = 45,
-                        height = 45,
-                        border_radius = 45 * 0.388,
+                        width = 64,
+                        height = 64,
+                        border_radius = 24,
                         bgcolor = ft.Colors.TRANSPARENT,
                         alignment = ft.Alignment.CENTER,
 
                         content = ft.Icon(
                             icon = ft.CupertinoIcons.XMARK,
-                            size = 18, color = c.sub_textos
+                            size = 24, color = c.preto_icons
                         ),
 
                         on_click = self.fechar,
@@ -452,26 +432,42 @@ class AlertDialog_stepper:
             title_padding = ft.Padding(
                 left = self.margin_lateral_interna,
                 right = self.margin_lateral_interna,
-                top = 25
+                top = 26,
             ),
 
-            content = ft.Stack(
-                margin = ft.Margin(top = 15),
+            content = ft.Column(
+                spacing = 0,
+                expand = True,
+                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+                horizontal_alignment = ft.CrossAxisAlignment.CENTER,
 
                 controls = [
-                    barra_pesquisa,
-                    tags_sugestoes,
-                    lista_options,
-                    barra_inferior,
+                    ft.Column(
+                        expand = True,
+                        alignment = ft.MainAxisAlignment.START,
+                        horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+                        controls = [
+                            self.barra_pesquisa(),
+                            self.tags_sugestoes,
+                            self.lista_options,
+                        ]
+                    ),
+
+                    self.barra_inferior,
                 ]
             )
         )
+
+        return self.control_alert
 
     def abrir(self, e = None):
         if self.dialog.open:
             return
 
-        self.dialog.content.height = self.page.height * 3 / 5
+        self.totais = 0
+        self.servicos_atendimento.clear()
+
+        self.dialog.content.height = self.page.height * 3 / 4
         self.dialog.content.width = self.page.width
 
         self.dialog_aberto = True
@@ -514,7 +510,7 @@ class AlertDialog_stepper:
             quantidade = int(campo.value)
             quantidade += 1
 
-            cofre.servicos_atendimento[servico] = {
+            self.servicos_atendimento[servico] = {
                 'valor': valor,
                 'quantidade': quantidade,
                 'total': valor * quantidade
@@ -527,7 +523,7 @@ class AlertDialog_stepper:
             quantidade = int(campo.value)
             quantidade = quantidade - 1
 
-            cofre.servicos_atendimento[servico] = {
+            self.servicos_atendimento[servico] = {
                 'valor': valor,
                 'quantidade': quantidade,
                 'total': valor * quantidade
@@ -538,24 +534,23 @@ class AlertDialog_stepper:
 
             if quantidade == 0:
                 btn_inverso.bgcolor = c.branco
-                btn_inverso.border = ft.Border.all(width = 0.6, color = c.bordas)
                 btn_inverso.content.color = c.textos
 
                 controle.on_click = None
-                controle.opacity = 0.4
+                controle.opacity = 0.2
 
-                if servico in cofre.servicos_atendimento:      #   LIMPA O REGISTRO DO DICIONÁRIO PARA NÃO SER UM PROBLEMA NA H0RA DE LER
-                    cofre.servicos_atendimento.pop(servico)
+                if servico in self.servicos_atendimento:      #   LIMPA O REGISTRO DO DICIONÁRIO PARA NÃO SER UM PROBLEMA NA H0RA DE LER
+                    self.servicos_atendimento.pop(servico)
 
                 controle.update()
                 btn_inverso.update()
 
         totais_temporario = 0
 
-        for servicos in cofre.servicos_atendimento:
-            totais_temporario += cofre.servicos_atendimento[servicos]['total']
+        for servicos in self.servicos_atendimento:
+            totais_temporario += self.servicos_atendimento[servicos]['total']
 
-        cofre.totais = totais_temporario
+        self.totais = totais_temporario
         totalidade = f'{totais_temporario:.2f}'.replace('.', ',')
         controle.data['text_total'].value = f'R$ {totalidade}'
 
@@ -563,29 +558,29 @@ class AlertDialog_stepper:
 
         totais_temporario = 0
 
-        print(cofre.totais)
-        print(cofre.servicos_atendimento)
+        print(self.totais)
+        print(self.servicos_atendimento)
     
     def stepper_control(self, servico = None, valor = None, text_total = ft.Control):
         campo = ft.Text(
             value = 0,
-            width = 40,
+            width = 50,
             max_lines = 1,
             text_align = ft.TextAlign.CENTER,
             overflow = ft.TextOverflow.ELLIPSIS,
         
             style = ft.TextStyle(
-                size = 14, color = c.preto_icons, font_family = 'inter'
+                size = 18, color = c.preto_icons, font_family = 'inter'
             )
         )
 
         btn_menos = ft.Container(          #   BOTÃO DE SUBTRAÇÃO
             width = 54,
             height = 54,
-            opacity = 0.4,
+            opacity = 0.2,
             border_radius = 22,
             bgcolor = c.branco,
-            border = ft.Border.all(width = 0.6, color = c.bordas),
+            shadow = c.shadow_leve(),
             alignment = ft.Alignment.CENTER,
                 
             content = ft.Icon(
@@ -599,7 +594,7 @@ class AlertDialog_stepper:
             height = 54,
             border_radius = 22,
             bgcolor = c.branco,
-            border = ft.Border.all(width = 0.6, color = c.bordas),
+            shadow = c.shadow_leve(),
             alignment = ft.Alignment.CENTER,
                                     
             content = ft.Icon(
@@ -651,89 +646,3 @@ class AlertDialog_stepper:
             ]
         )
 
-class AlertDialog_check:
-    def __init__(self):
-        pass
-
-        # def status_check_box_control(self, e):
-    #     if 'check' in e.control.data:
-    #         check = e.control.data['check']
-    #         item = e.control.data['item']
-
-    #     else:
-    #         check = e.control
-    #         item = e.control.data['item']
-            
-    #     if not check.data['ativo']:
-    #         check.bgcolor = c.verde
-    #         check.border = ft.Border.all(width = 0, color = ft.Colors.TRANSPARENT)
-    #         check.data['ativo'] = True
-
-    #         print(item)
-
-    #     else:
-    #         check.bgcolor = c.branco
-    #         check.border = ft.Border.all(width = 1, color = c.sub_textos)
-    #         check.data['ativo'] = False
-
-    #     e.control.update()
-
-    # def check_box_control(self, item):
-    #     return ft.Container(
-    #         width = 25,
-    #         height = 25,
-    #         border_radius = 8,
-    #         bgcolor = c.branco,
-    #         border = ft.Border.all(width = 1, color = c.sub_textos),
-
-    #         data = {
-    #             'ativo': False,
-    #             'item': item
-    #         },
-
-    #         content = ft.Icon(
-    #             icon = ft.CupertinoIcons.CHECK_MARK,
-    #             size = 20, color = c.branco
-    #         ),
-
-    #         on_click = self.status_check_box_control
-    #     )
-
-
-    # def adicionar_itens_dialog_CHECK(self):
-            # self.dialog.content.controls[0].controls.clear()
-    
-            # for item in self.plug_dados:
-            #     check = self.check_box_control(item)
-                
-            #     self.dialog.content.controls[0].controls.extend([
-            #         ft.Container(
-            #             border_radius = 0,
-            #             border = ft.Border(bottom = ft.BorderSide(width = 0.6, color = c.bordas)),
-            #             margin = ft.Margin(left = self.margin_lateral_interna, right = self.margin_lateral_interna),
-                                        
-            #             data = {
-            #                 'item': item,
-            #                 'check': check
-            #             },
-                                            
-            #             content = ft.Row(
-            #                 margin = 0,
-            #                 height = 70,
-            #                 expand = True,
-            #                 alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
-            #                 vertical_alignment = ft.CrossAxisAlignment.CENTER,
-    
-            #                 controls = [
-            #                     ft.Text(
-            #                         value = item,
-            #                         style = ft.TextStyle(size = 16, color = c.sub_textos, font_family = 'inter')
-            #                     ),
-                
-            #                     check
-            #                 ]
-            #             ),
-    
-            #             on_click = self.status_check_box_control
-            #         )
-            #     ])

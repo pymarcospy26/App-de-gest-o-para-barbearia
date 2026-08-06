@@ -25,19 +25,6 @@ class Tela_Atendimento:
             self.page, atual = self, nova = await anterior.tela()
         )
 
-    def atualizar_sugestoes(self, e):
-        self.pesquisa_completa.height = 290
-        self.pesquisa_completa.controls[0].bottom = 0
-        self.pesquisa_completa.controls[0].height = 200
-
-        self.pesquisa_completa.controls[0].content.controls.extend([
-            ft.Text(value = 'Opcao', size = 14, color = c.preto_icons, expand = True),
-            ft.Text(value = 'Opcao', size = 14, color = c.preto_icons, expand = True),
-            ft.Text(value = 'Opcao', size = 14, color = c.preto_icons, expand = True),
-        ])
-
-        self.pesquisa_completa.update()
-
     def widgets(self):
         self.btn_exit = ft.Container(
             width = 74,
@@ -61,94 +48,145 @@ class Tela_Atendimento:
             on_click = self.mudar_page,
         )
 
-        self.barra_peesquisa = ft.Column(
+        self.cliente_servico_ROW = ft.ResponsiveRow(
+            columns = 2,
+            spacing = 0,
+            run_spacing = 0,
             alignment = ft.MainAxisAlignment.START,
-            horizontal_alignment = ft.CrossAxisAlignment.START,
-
-            controls = [
-                ft.Container(
-                    height = 74,
-                    border_radius = 34,
-                    bgcolor = c.branco,
-                    shadow = c.shadow_leve(),
-
-                    alignment = ft.Alignment.CENTER,
-                    margin = ft.Margin(
-                        top = 2,
-                        left = vg.margin_left,
-                        right = vg.margin_right,
-                    ),
-
-                    on_click = self.atualizar_sugestoes,
-
-                    content = ft.Stack(
-                        height = 74,
-                        alignment = ft.Alignment.CENTER,
-
-                        controls = [
-                            ft.TextField(
-                                top = 0,
-                                left = 0,
-                                right = 0,
-                                bottom = 0,
-                                bgcolor = c.verde,
-                                content_padding = 34,
-                                border_color = ft.Colors.TRANSPARENT,
-
-                                text_style = ft.TextStyle(
-                                    size = 16, color = c.preto_icons,
-                                    font_family = 'inter'
-                                )
-                            ),
-
-                            ft.Container(
-                                right = 0,
-                                width = 58,
-                                height = 58,
-                                border_radius = 26,
-                                bgcolor = c.azul_violeta,
-                                alignment = ft.Alignment.CENTER,
-
-                                content = ic.svg_icon(
-                                    'lupa',
-                                    size = 30, color = c.branco
-                                ),
-
-                                margin = ft.Margin(right = (74 - 58) / 2)
-                            ),
-                        ]
-                    )
-                )
-            ]
+            vertical_alignment = ft.CrossAxisAlignment.CENTER
         )
 
-        self.sugestao = ft.Container(
-            height = 0,
-            width = self.page.width - (16 * 2),
+        self.box_resumo = ft.Container(
+            height = 260,
+            expand = True,
             bgcolor = c.branco,
             border_radius = 34,
             shadow = c.shadow_leve(),
-            alignment = ft.Alignment.CENTER,
-            margin = ft.Margin(left = vg.margin_left, right = vg.margin_right),
+            margin = ft.Margin(left = vg.margin_left, right = vg.margin_right, top = vg.margin_top),
 
             content = ft.Column(
                 spacing = 0,
-                alignment = ft.MainAxisAlignment.CENTER,
+                expand = True,
+                alignment = ft.MainAxisAlignment.START,
                 horizontal_alignment = ft.CrossAxisAlignment.START,
+
+                controls = [
+                    ft.Text(
+                        value = 'Resumo',
+                        size = 20, color = c.preto_icons,
+                        font_family = 'inter',
+                        margin = ft.Margin(left = 24, top = 24)
+                    ),
+
+                    ft.Column(
+                        spacing = 0,
+                        expand = True,
+                        alignment = ft.MainAxisAlignment.START,
+                        horizontal_alignment = ft.CrossAxisAlignment.START,
+
+                        controls = []
+                    )
+                ]
             )
         )
 
-        self.pesquisa_completa = ft.Stack(
-            height = 74,
+    def radioButton_pagamaneto(
+        self,
+        titulo = 'Vazio',
+        icon = 'circulo_alerta',
+        option_icon: str = 'svg',
+        top: int = 6, left: int = 0, right: int = 0,
+    ):
+        radio = ft.Container(
+            width = 32,
+            height = 32,
+            bgcolor = c.branco,
+            border_radius = 32 / 2,
+            margin = ft.Margin(left = 14, top = 14),
+            border = ft.Border.all(width = 2, color = c.bordas),
+        )
 
-            controls = [
-                self.sugestao,
-                self.barra_peesquisa,
-            ]
+        return ft.Container(
+            bgcolor = c.branco,
+            border_radius = 34,
+            shadow = c.shadow_leve(),
+            margin = ft.Margin(top = top, left = left, right = right),
+
+            width = (self.page.width - (4 * 16)) / 3,
+
+            data = {
+                'radio': radio,
+            },
+
+            content = ft.Column(
+                alignment = ft.MainAxisAlignment.START,
+                horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+                controls = [
+                    ft.Row(
+                        margin = ft.Margin(bottom = 10),
+                        alignment = ft.MainAxisAlignment.START,
+                        vertical_alignment = ft.CrossAxisAlignment.CENTER,
+                        controls = [
+                            radio
+                        ]
+                    ),
+
+                    ic.svg_icon(
+                        path = icon,
+                        size = 30, color = c.sub_textos
+                    )
+
+                    if option_icon == 'svg' else
+
+                    ft.Icon(
+                        icon = icon,
+                        size = 30, color = c.sub_textos
+                    ),
+
+                    ft.Text(
+                        value = titulo,
+                        size = 16, color = c.sub_textos,
+                        font_family = 'inter',
+                        margin = ft.Margin(bottom = 54)
+                    )
+                ]
+            )
         )
 
     async def add(self):
+        self.cliente_servico_ROW.controls.extend([
+            await wd.dropdown(
+                page = self.page,
+                text_interno = 'Cliente',
+                icon = ic.svg_icon(
+                    'user',
+                    size = 25, color = c.sub_textos
+                ),
+
+                icon_status = 'triangulo_alerta',
+                cor_tatus = c.vermelho,
+                
+                margin = ft.Margin(top = 6, left = vg.margin_left, right = vg.margin_right / 2)
+            ),
+
+            await wd.dropdown(
+                page = self.page,
+                text_interno = 'Serviços',
+                icon = ft.Icon(
+                    icon = ft.CupertinoIcons.SCISSORS_ALT,
+                    size = 25, color = c.sub_textos
+                ),
+
+                icon_status = 'check',
+                cor_tatus = c.verde,
+
+                margin = ft.Margin(top = 6, left = vg.margin_left / 2, right = vg.margin_right)
+            ),
+        ])
+
         self.estrutura = ft.Column(
+            expand = True,
+            scroll = ft.ScrollMode.AUTO,
             alignment = ft.MainAxisAlignment.START,
             horizontal_alignment = ft.CrossAxisAlignment.START,
 
@@ -161,13 +199,40 @@ class Tela_Atendimento:
                     margin = ft.Margin(left = vg.margin_left, top = vg.margin_top + 6)
                 ),
 
-                self.pesquisa_completa,
+                self.cliente_servico_ROW,
+                ft.Row([self.box_resumo], expand = True),
 
-                await wd.dropdown(
-                    page = self.page,
-                    titulo = 'Selecione os servicos',
-                    hint_text = 'Toque para selcionar servicos',
-                    margin = ft.Margin(left = vg.margin_left, right = vg.margin_right)
+                # ft.Text(
+                #     value = 'Pagamento',
+                #     size = 24, color = c.preto_icons,
+                #     margin = ft.Margin(left = vg.margin_left, top = vg.margin_top + 6)
+                # ),
+
+                ft.Row(
+                    spacing = 16,
+                    expand = True,
+                    alignment = ft.MainAxisAlignment.CENTER,
+                    vertical_alignment = ft.CrossAxisAlignment.CENTER,
+
+                    controls = [
+                        self.radioButton_pagamaneto(
+                            titulo = 'Dinheiro',
+                            icon = 'dinheiro',
+                            left = vg.margin_left,
+                        ),
+
+                        self.radioButton_pagamaneto(
+                            titulo = 'Pix',
+                            option_icon = 'Icon',
+                            icon = ft.Icons.PIX_OUTLINED,
+                        ),
+
+                        self.radioButton_pagamaneto(
+                            titulo = 'Cartão',
+                            icon = 'cartao',
+                            right = vg.margin_right
+                        ),
+                    ]
                 )
             ]
         )
