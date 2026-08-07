@@ -33,15 +33,8 @@ class Tela_Home:
 
         self.acesso_rapido = ['Retirada', 'Fiados', 'Angendar']
 
-    async def mudar_tela(self, e):
-        # atendimento = ta.Tela_Atendimento(self.page)  ANTIGA TELA DE ATENDIMEENTO SUBSTITUIDA POR POUP UP
-
-        # await fx.mudar_page(self.page, atual = self, nova = await atendimento.add())
-
-        pass
-
     async def abrir_atendimento(self, e):
-        alert_dialog = diag.AlertDialog_stepper(self.page, titulo = 'Serviços', text_button = 'Prosseguir')
+        alert_dialog = diag.AlertDialog_atendimento(self.page)
         await alert_dialog.inicializar()
 
         alert_dialog.abrir(e)
@@ -108,7 +101,7 @@ class Tela_Home:
                             
                             ft.Text(
                                 value = titulo,
-                                size = 14, color = c.preto_icons,
+                                size = 16, color = c.preto_icons,
                                 font_family = 'inter', text_align = ft.TextAlign.CENTER
                             )
                         ]
@@ -129,7 +122,7 @@ class Tela_Home:
             controls = [
                 ft.Text(
                     value = 'Clientes agendados',
-                    size = 16, color = c.preto_icons,
+                    size = 20, color = c.preto_icons,
                     font_family = 'inter', margin = ft.Margin(
                         left = vg.margin_left, top = vg.margin_top, bottom = vg.margin_top / 2
                     )

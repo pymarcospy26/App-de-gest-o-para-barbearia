@@ -59,3 +59,10 @@ def shadow_leve(x = 0, y = 4, blr = 6, opc = 0.2):
         offset = ft.Offset(x, y),
         color = ft.Colors.with_opacity(color = sombra, opacity = opc)
     )
+
+def shadow_buttons():
+    return ft.BoxShadow(
+        blur_radius = 10,
+        offset = ft.Offset(0, 4),
+        color = ft.Colors.with_opacity(color = azul_violeta, opacity = 0.4)
+    )

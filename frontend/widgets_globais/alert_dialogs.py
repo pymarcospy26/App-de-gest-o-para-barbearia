@@ -5,14 +5,12 @@ import colors as c
 import unicodedata
 import variaveis_globais as vg
 
-class AlertDialog_stepper:
+class AlertDialog_atendimento:
     def __init__(
         self, page,
-        titulo = 'Selecionar item', text_button = 'Salvar'
     ):
         self.page = page
-        self.titulo = titulo
-        self.text_button = text_button
+        self.titulo = ''
 
         self.servicos_atendimento = {}
         self.totais = 0
@@ -25,11 +23,29 @@ class AlertDialog_stepper:
         self.armazenamento_controles = {}
         self.armazenamento_tags = {}
 
+        self.alertdialog_global = ft.AlertDialog(
+            modal = False,
+            expand = True,
+            actions_padding = 0,
+            content_padding = 0,
+            bgcolor = c.background,
+            shape = ft.RoundedRectangleBorder(radius = 34),
+            inset_padding = ft.Padding(left = vg.margin_left, right = vg.margin_right, bottom = 0),
+
+            data = {},
+            
+            title_padding = ft.Padding(
+                left = self.margin_lateral_interna,
+                right = self.margin_lateral_interna,
+                top = 26,
+            )
+        )
+
     def adicao_steppers(self, setor, servico, valor):
         stepper = self.stepper_control(
             servico = servico,
             valor = valor,
-            text_total = self.dialog.data['barra_inferior'].content.controls[0].controls[1]
+            text_total = self.alertdialog_global.data['barra_inferior_atendimento'].content.controls[0].controls[1]
         )
                                 
         valors = f'R$ {valor:.2f}'.replace('.', ',')
@@ -86,14 +102,16 @@ class AlertDialog_stepper:
             )
         )
         
-        self.dialog.data['lista'].controls.append(controle)
+        self.alertdialog_global.data['lista_atendimento'].controls.append(controle)
+#       AQUI ^ ADICIONA OS CONTROLES/LISTA NA TELA ATRAVÉZ DO DATA DO ALERTDIALOG
 
         return controle
+#       RETORNA O CONTROLE PARA ADICIONÁ-LO A UM DICIONÁRIO DE ARMAZENAMENTO QUANDO A FUNÇÃO É CHAMADA
 
     def recarregar_lista(self, e):
         botao = e.control
         setor = botao.data['setor']
-        lista = self.dialog.data['lista']
+        lista = self.alertdialog_global.data['lista_atendimento']
 
         lista.controls.clear()
         lista.alignment = ft.MainAxisAlignment.CENTER
@@ -124,21 +142,22 @@ class AlertDialog_stepper:
                     lista.controls.append(box)
             
             lista.update()
-            self.dialog.data['tags'].update()
+            self.alertdialog_global.data['tags_atendimento'].update()
 
         self.page.run_task(carregar_nova_lista)
 
-    async def inicializar(self):
+    async def inicializar(self, e = None):
         self.dados_carregados = False
-        self.dialog = self.alertdialog()
+
+        await self.pages_dialog()
 
     async def carregar_dados(self):
         setores = await bd.setores()
         servicos_valors = await bd.servico_valor()
 
-        self.dialog.data['lista'].alignment = ft.MainAxisAlignment.START
+        self.alertdialog_global.data['lista_atendimento'].alignment = ft.MainAxisAlignment.START
 
-        self.dialog.data['lista'].controls.clear()
+        self.alertdialog_global.data['lista_atendimento'].controls.clear()
 
         tag_todos = ft.Container(
             height = 56,
@@ -163,7 +182,7 @@ class AlertDialog_stepper:
             on_click = self.recarregar_lista
         )
 
-        self.dialog.data['tags'].controls.append(tag_todos)
+        self.alertdialog_global.data['tags_atendimento'].controls.append(tag_todos)
 
         self.armazenamento_tags['Todos'] = tag_todos
         
@@ -190,21 +209,22 @@ class AlertDialog_stepper:
             )
 
             self.armazenamento_tags[setor] = tag
-            self.dialog.data['tags'].controls.append(tag)
-            self.dialog.data['tags'].update()
+            self.alertdialog_global.data['tags_atendimento'].controls.append(tag)
+            self.alertdialog_global.data['tags_atendimento'].update()
                 
         for setor_reserva, servico, valor in servicos_valors:
             controle = self.adicao_steppers(setor_reserva, servico, valor)
             self.armazenamento_controles[controle.data['servico']] = controle
+#           AQUI ^ SÃO ADICIONADOS AO DICIONÁRIO OS RETURN'S (CONTROLES) DA DEF DE CONTROLES/LISTA
     
-        self.dialog.data['lista'].update()
-        self.dialog.data['tags'].update()
+        self.alertdialog_global.data['lista_atendimento'].update()
+        self.alertdialog_global.data['tags_atendimento'].update()
 
         self.dados_carregados = True
 
     def pesquisa_servicos(self, e):
         digitado = e.control.value
-        self.dialog.data['lista'].controls.clear()
+        self.alertdialog_global.data['lista_atendimento'].controls.clear()
 
         controles = []
 
@@ -224,11 +244,11 @@ class AlertDialog_stepper:
             texto_servico = normalizar_letras(servico)
 
             if all(palavra in texto_servico for palavra in palavras):
-                self.dialog.data['lista'].alignment = ft.MainAxisAlignment.START
+                self.alertdialog_global.data['lista_atendimento'].alignment = ft.MainAxisAlignment.START
                 controles.append(self.armazenamento_controles[servico])
 
         if len(controles) == 0:
-            error = ft.Column(
+            not_found = ft.Column(
                 alignment = ft.MainAxisAlignment.CENTER,
                 horizontal_alignment = ft.CrossAxisAlignment.CENTER,
                 controls = [
@@ -244,14 +264,21 @@ class AlertDialog_stepper:
                     ),
                 ]
             )
-            self.dialog.data['lista'].alignment = ft.MainAxisAlignment.CENTER
-            self.dialog.data['lista'].controls.append(error)
+
+            self.alertdialog_global.data['lista_atendimento'].alignment = ft.MainAxisAlignment.CENTER
+            self.alertdialog_global.data['lista_atendimento'].controls.append(not_found)
 
             return
         
-        self.dialog.data['lista'].controls.extend(controles)
+        self.alertdialog_global.data['lista_atendimento'].controls.extend(controles)
 
-    def barra_pesquisa(self):
+    def barra_pesquisa(
+        self,
+        text_interno = 'Busca rápida',
+
+        on_focus: ft.Event = None,
+        on_change: ft.Event = None,
+    ):
         return ft.Stack(
             height = 74,
             alignment = ft.Alignment.CENTER,
@@ -275,7 +302,6 @@ class AlertDialog_stepper:
                         content_padding = ft.Padding(left = 50, top = 21, bottom = 21),
 
                         bgcolor = c.branco,
-                        border = ft.Border.all(width = 0.6),
                         border_color = ft.Colors.TRANSPARENT,
                         focused_border_color = c.lilas_calmo,
 
@@ -284,14 +310,14 @@ class AlertDialog_stepper:
                             font_family = 'inter'
                         ),
 
-                        hint_text = 'Buscar servico',
+                        hint_text = text_interno,
                         hint_style = ft.TextStyle(
                             size = 16, color = c.sub_textos,
                             font_family = 'inter'
                         ),
 
-                        on_focus = self.pesquisa_servicos,
-                        on_change = self.pesquisa_servicos
+                        on_focus = on_focus,
+                        on_change = on_change
                     )
                 ),
                 
@@ -303,176 +329,19 @@ class AlertDialog_stepper:
             ]
         )
 
-    def alertdialog(self):  
-        self.barra_inferior = ft.Container(
-            height = 110,
-            bgcolor = c.branco,
-            shadow = c.shadow_leve(x = 0, y = -4),
-
-            border_radius = ft.BorderRadius(
-                top_left = 0,
-                top_right = 0,
-                bottom_left = 34,
-                bottom_right = 34
-            ),
-
-            content = ft.Row(
-                expand = True,
-                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
-                vertical_alignment = ft.CrossAxisAlignment.CENTER,
-        
-                controls = [
-                    ft.Column(
-                        spacing = 0,
-                        alignment = ft.MainAxisAlignment.CENTER,
-                        horizontal_alignment = ft.CrossAxisAlignment.START,
-        
-                        controls = [
-                            ft.Text(
-                                value = 'Total', margin = ft.Margin(left = self.margin_lateral_interna),
-                                style = ft.TextStyle(size = 14, color = c.sub_textos, font_family = 'inter')
-                            ),
-        
-                            ft.Text(
-                                value = 'R$ 0,00', margin = ft.Margin(left = self.margin_lateral_interna),
-                                style = ft.TextStyle(size = 22, color = c.preto_icons, font_family = 'inter')
-                            ),
-                            
-                            ft.Row(height = 6),
-                        ]
-                    ),
-        
-                    ft.Container(
-                        height = 58,
-                        gradient = c.gradiente_top_bottom(c.gradiente_botoes),
-                        margin = ft.Margin(
-                            right = self.margin_lateral_interna,
-                        ),
-                                        
-                        border_radius = 24,
-                        alignment = ft.Alignment.CENTER,
-        
-                        content = ft.Text(
-                            value = self.text_button,
-                            style = ft.TextStyle(
-                                size = 16, color = c.branco, font_family = 'inter',
-                            ),
-
-                            margin = ft.Margin(left = 26, right = 26)
-                        ),
-                    )
-                ]
-            )
-        )
-        
-        self.lista_options = ft.Column(
-            spacing = 0,
-            expand = True,
-            scroll = ft.ScrollMode.AUTO,
-
-            alignment = ft.MainAxisAlignment.CENTER,
-            horizontal_alignment = ft.CrossAxisAlignment.CENTER,
-
-            controls = [ft.ProgressRing(color = c.lilas_calmo, height = 100, width = 100)]
-        )
-
-        self.tags_sugestoes = ft.Row(
-            margin = ft.Margin(top = 6),
-            scroll = ft.ScrollMode.AUTO,
-            alignment = ft.MainAxisAlignment.START,
-            vertical_alignment = ft.CrossAxisAlignment.CENTER,
-
-            controls = []
-        )
-
-        self.control_alert = ft.AlertDialog(
-            modal = False,             #   ATIVAR QUANDO TIVER O BOTÃO DE FECHAR
-            expand = True,
-            actions_padding = 0,
-            content_padding = 0,
-            bgcolor = c.background,
-            shape = ft.RoundedRectangleBorder(radius = 34),
-            inset_padding = ft.Padding(left = vg.margin_left, right = vg.margin_right, bottom = 0),
-
-            data = {
-                'tags': self.tags_sugestoes,
-                'lista': self.lista_options,
-                'barra_inferior': self.barra_inferior,
-                'barra_pesquisa': self.barra_pesquisa,
-            },
-
-            title = ft.Row(
-                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
-                vertical_alignment = ft.CrossAxisAlignment.CENTER,
-
-                controls = [
-                    ft.Text(
-                        value = self.titulo,
-                        style = ft.TextStyle(size = 22, color = c.preto_icons, font_family = 'inter')
-                    ),
-
-                    ft.Container(
-                        width = 64,
-                        height = 64,
-                        border_radius = 24,
-                        bgcolor = ft.Colors.TRANSPARENT,
-                        alignment = ft.Alignment.CENTER,
-
-                        content = ft.Icon(
-                            icon = ft.CupertinoIcons.XMARK,
-                            size = 24, color = c.preto_icons
-                        ),
-
-                        on_click = self.fechar,
-                        ink = True
-                    )
-                ],
-            ),
-            
-            title_padding = ft.Padding(
-                left = self.margin_lateral_interna,
-                right = self.margin_lateral_interna,
-                top = 26,
-            ),
-
-            content = ft.Column(
-                spacing = 0,
-                expand = True,
-                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
-                horizontal_alignment = ft.CrossAxisAlignment.CENTER,
-
-                controls = [
-                    ft.Column(
-                        expand = True,
-                        alignment = ft.MainAxisAlignment.START,
-                        horizontal_alignment = ft.CrossAxisAlignment.CENTER,
-                        controls = [
-                            self.barra_pesquisa(),
-                            self.tags_sugestoes,
-                            self.lista_options,
-                        ]
-                    ),
-
-                    self.barra_inferior,
-                ]
-            )
-        )
-
-        return self.control_alert
-
     def abrir(self, e = None):
-        if self.dialog.open:
+        if self.alertdialog_global.open:
             return
 
         self.totais = 0
         self.servicos_atendimento.clear()
 
-        self.dialog.content.height = self.page.height * 3 / 4
-        self.dialog.content.width = self.page.width
+        self.alertdialog_global.content.height = self.page.height * 3 / 4
+        self.alertdialog_global.content.width = self.page.width
 
         self.dialog_aberto = True
 
-        self.page.show_dialog(self.dialog)
+        self.page.show_dialog(self.alertdialog_global)
         self.page.update()
 
         if not self.dados_carregados:
@@ -551,6 +420,7 @@ class AlertDialog_stepper:
             totais_temporario += self.servicos_atendimento[servicos]['total']
 
         self.totais = totais_temporario
+
         totalidade = f'{totais_temporario:.2f}'.replace('.', ',')
         controle.data['text_total'].value = f'R$ {totalidade}'
 
@@ -645,4 +515,406 @@ class AlertDialog_stepper:
                 btn_mais
             ]
         )
+
+    async def pages_dialog(self, carregar_page = 'atendimento'):
+        async def carregar_page_now(titulo_new):
+            self.titulo = titulo_new
+            self.alertdialog_global.title = ft.Row(
+                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment = ft.CrossAxisAlignment.CENTER,
+
+                controls = [
+                    ft.Text(
+                        value = self.titulo,
+                        style = ft.TextStyle(size = 22, color = c.preto_icons, font_family = 'inter')
+                    ),
+
+                    ft.Container(
+                        width = 64,
+                        height = 64,
+                        border_radius = 24,
+                        bgcolor = ft.Colors.TRANSPARENT,
+                        alignment = ft.Alignment.CENTER,
+
+                        content = ft.Icon(
+                            icon = ft.CupertinoIcons.XMARK,
+                            size = 24, color = c.preto_icons
+                        ),
+
+                        on_click = self.fechar,
+                        ink = True
+                    )
+                ]
+            )
+
+            self.alertdialog_global.content.height = self.page.height * 3 / 4
+            self.alertdialog_global.content.width = self.page.width
+        async def return_atendimento(e):
+            self.alertdialog_global.content = self.page_servico
+            await carregar_page_now('Atendimento')  
+            self.alertdialog_global.update()
+        async def go_conclusao(e):
+            self.alertdialog_global.content = self.page_conclusao
+            await carregar_page_now('Conclusão')
+            self.alertdialog_global.update()
+
+        self.lista_options_conclusao = ft.Column(
+            spacing = 0,
+            expand = True,
+            scroll = ft.ScrollMode.AUTO,
+            alignment = ft.MainAxisAlignment.START,
+            horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+
+            controls = [
+                ft.Container(
+                    height = 64,
+                    border_radius = 26,
+                    bgcolor = c.branco,
+                    shadow = c.shadow_leve(),
+                    alignment = ft.Alignment.CENTER,
+                    margin = ft.Margin(left = self.margin_lateral_interna, right = self.margin_lateral_interna),
+
+                    content = ft.Dropdown(
+                        height = 64,
+                        expand = True,
+                        editable = True,
+                        bgcolor = c.branco,
+                        border_radius = 26,
+                        enable_search = True,
+                        color = c.preto_icons,
+                        fill_color = c.branco,
+
+                        hint_text = 'Buscar cliente',
+                        hint_style = ft.TextStyle(
+                            size = 16, color = c.sub_textos,
+                            font_family = 'inter',
+                        ),
+
+                        menu_style = ft.MenuStyle(
+                            bgcolor = c.branco,
+                            shape = ft.RoundedRectangleBorder(radius = 26),
+                            shadow_color = ft.Colors.with_opacity(color = c.sombra, opacity = 0.2),
+
+                            max_size = ft.Size(
+                                height = self.page.height * 0.22,
+                                width = self.page.width - ((2 * 16) + (2 * self.margin_lateral_interna))
+                            ),
+                        ),
+
+                        border_color = ft.Colors.TRANSPARENT,
+                        focused_border_color = c.azul_violeta,
+                        content_padding = ft.Padding(left = 22, top = 21, bottom = 21),
+
+                        options = [
+                            ft.DropdownOption(
+                                ft.Text(
+                                    value = 'Opção Nova',
+                                    margin = ft.Margin(left = 12),
+                                    size = 16, color = c.preto_icons1,
+                                    font_family = 'inter'
+                                )
+                            ),
+                            
+                            ft.DropdownOption(
+                                'HeloKit', style = ft.TextStyle(
+                                    size = 16, color = c.sub_textos, font_family = 'inter'
+                                )
+                            ),
+                            
+                            ft.DropdownOption(
+                                'HeloKit', style = ft.TextStyle(
+                                    size = 16, color = c.sub_textos, font_family = 'inter'
+                                )
+                            ),
+                            
+                            ft.DropdownOption(
+                                'HeloKit', style = ft.TextStyle(
+                                    size = 16, color = c.sub_textos, font_family = 'inter'
+                                )
+                            ),
+                            
+                            ft.DropdownOption(
+                                'HeloKit', style = ft.TextStyle(
+                                    size = 16, color = c.sub_textos, font_family = 'inter'
+                                )
+                            ),
+                            
+                            ft.DropdownOption(
+                                'HeloKit', style = ft.TextStyle(
+                                    size = 16, color = c.sub_textos, font_family = 'inter'
+                                )
+                            ),
+                            
+                            ft.DropdownOption(
+                                'HeloKit', style = ft.TextStyle(
+                                    size = 16, color = c.sub_textos, font_family = 'inter'
+                                )
+                            ),
+                            
+                            ft.DropdownOption(
+                                'HeloKit', style = ft.TextStyle(
+                                    size = 16, color = c.sub_textos, font_family = 'inter'
+                                )
+                            ),
+                            
+                            ft.DropdownOption(
+                                'HeloKit', style = ft.TextStyle(
+                                    size = 16, color = c.sub_textos, font_family = 'inter'
+                                )
+                            ),
+                            
+                            ft.DropdownOption(
+                                'dropdow', style = ft.TextStyle(
+                                    size = 16, color = c.sub_textos, font_family = 'inter'
+                                )
+                            ),
+                        ]
+                    )
+                ),
+                
+                ft.Container(
+                    expand = True,
+                    bgcolor = c.branco,
+                    border_radius = 26,
+                    shadow = c.shadow_leve(),
+                    alignment = ft.Alignment.CENTER,
+                    height = self.page.height * 0.24,
+                    margin = ft.Margin(left = self.margin_lateral_interna, right = self.margin_lateral_interna),
+
+                    content = ft.Column(
+                        spacing = 0,
+                        expand = True,
+                        alignment = ft.MainAxisAlignment.START,
+                        horizontal_alignment = ft.CrossAxisAlignment.START,
+
+                        controls = []                        
+                    )
+                )
+            ]
+        
+        )
+                                
+        self.barra_inferior_conclusao = ft.Container(
+            height = 110,
+            bgcolor = c.branco,
+            shadow = c.shadow_leve(x = 0, y = -4),
+
+            border_radius = ft.BorderRadius(
+                top_left = 0,
+                top_right = 0,
+                bottom_left = 34,
+                bottom_right = 34
+            ),
+
+            content = ft.Row(
+                expand = True,
+                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment = ft.CrossAxisAlignment.CENTER,
+        
+                controls = [
+                    ft.Container(
+                        height = 58,
+                        bgcolor = c.branco,
+                        shadow = c.shadow_leve(y = 2, opc = 0.4),
+
+                        margin = ft.Margin(
+                            left = self.margin_lateral_interna,
+                        ),
+                                        
+                        border_radius = 24,
+                        alignment = ft.Alignment.CENTER,
+        
+                        content = ft.Row(
+                            spacing = 6,
+                            alignment = ft.MainAxisAlignment.CENTER,
+                            vertical_alignment = ft.CrossAxisAlignment.CENTER,
+                            
+                            margin = ft.Margin(left = 26, right = 36),
+
+                            controls = [
+                                ic.svg_icon(
+                                    'seta_exit',
+                                    size = 26, color = c.rosa
+                                ),
+                                        
+                                ft.Text(
+                                    value = 'Voltar',
+                                    style = ft.TextStyle(
+                                        size = 16, color = c.rosa, font_family = 'inter',
+                                    ),
+                                )
+                            ]
+                        ),
+
+                        on_click = return_atendimento,
+                        ink = True
+                    ),
+
+                    ft.Container(
+                        height = 58,
+                        shadow = c.shadow_buttons(),
+
+                        gradient = c.gradiente_top_bottom(c.gradiente_botoes),
+                        margin = ft.Margin(
+                            right = self.margin_lateral_interna,
+                        ),
+                                        
+                        border_radius = 24,
+                        alignment = ft.Alignment.CENTER,
+        
+                        content = ft.Text(
+                            value = 'Finalizar',
+                            style = ft.TextStyle(
+                                size = 16, color = c.branco, font_family = 'inter',
+                            ),
+                            margin = ft.Margin(left = 36, right = 36)
+                        ),
+
+                        on_click = True,
+                        ink = True
+                    )
+                ]
+            )
+        )
+        self.page_conclusao = ft.Column(
+                spacing = 0,
+                expand = True,
+                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+                horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+                controls = [
+                    ft.Column(
+                        expand = True,
+                        alignment = ft.MainAxisAlignment.START,
+                        horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+                        controls = [
+                            self.lista_options_conclusao,
+                        ]
+                    ),
+
+                    self.barra_inferior_conclusao,
+                ]
+            )
+
+        self.tags_sugestoes = ft.Row(
+                margin = ft.Margin(top = 6),
+                scroll = ft.ScrollMode.AUTO,
+                alignment = ft.MainAxisAlignment.START,
+                vertical_alignment = ft.CrossAxisAlignment.CENTER,
+
+                controls = []
+            )
+        self.lista_options = ft.Column(
+                spacing = 0,
+                expand = True,
+                scroll = ft.ScrollMode.AUTO,
+
+                alignment = ft.MainAxisAlignment.CENTER,
+                horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+
+                controls = [ft.ProgressRing(color = c.lilas_calmo, height = 100, width = 100)]
+            )      
+        self.barra_inferior = ft.Container(
+                height = 110,
+                bgcolor = c.branco,
+                shadow = c.shadow_leve(x = 0, y = -4),
+
+                border_radius = ft.BorderRadius(
+                    top_left = 0,
+                    top_right = 0,
+                    bottom_left = 34,
+                    bottom_right = 34
+                ),
+
+                content = ft.Row(
+                    expand = True,
+                    alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+                    vertical_alignment = ft.CrossAxisAlignment.CENTER,
+            
+                    controls = [
+                        ft.Column(
+                            spacing = 0,
+                            alignment = ft.MainAxisAlignment.CENTER,
+                            horizontal_alignment = ft.CrossAxisAlignment.START,
+            
+                            controls = [
+                                ft.Text(
+                                    value = 'Subtotal', margin = ft.Margin(left = self.margin_lateral_interna),
+                                    style = ft.TextStyle(size = 14, color = c.sub_textos, font_family = 'inter')
+                                ),
+            
+                                ft.Text(
+                                    value = 'R$ 0,00', margin = ft.Margin(left = self.margin_lateral_interna),
+                                    style = ft.TextStyle(size = 22, color = c.preto_icons, font_family = 'inter')
+                                ),
+                                
+                                ft.Row(height = 6),
+                            ]
+                        ),
+            
+                        ft.Container(
+                            height = 58,
+                            shadow = c.shadow_buttons(),
+                            gradient = c.gradiente_top_bottom(c.gradiente_botoes),
+
+                            margin = ft.Margin(
+                                right = self.margin_lateral_interna,
+                            ),
+                                            
+                            border_radius = 24,
+                            alignment = ft.Alignment.CENTER,
+            
+                            content = ft.Text(
+                                value = 'Prosseguir',
+                                style = ft.TextStyle(
+                                    size = 16, color = c.branco, font_family = 'inter',
+                                ),
+
+                                margin = ft.Margin(left = 26, right = 26)
+                            ),
+
+                            on_click = go_conclusao,
+                            ink = True
+                        )
+                    ]
+                )
+            )
+        self.page_servico = ft.Column(
+            spacing = 0,
+            expand = True,
+            alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+            horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+            controls = [
+                ft.Column(
+                    expand = True,
+                    alignment = ft.MainAxisAlignment.START,
+                    horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+                    controls = [
+                        self.barra_pesquisa(
+                            on_focus = self.pesquisa_servicos,
+                            on_change = self.pesquisa_servicos
+                        ),
+
+                        self.tags_sugestoes,
+                        self.lista_options,
+                    ]
+                ),
+
+                self.barra_inferior,
+            ]
+        )
+
+        self.alertdialog_global.content = self.page_servico
+        self.alertdialog_global.data = {
+            'tags_atendimento': self.tags_sugestoes,
+            'lista_atendimento': self.lista_options,
+            'barra_inferior_atendimento': self.barra_inferior,
+            'barra_pesquisa_atendimento': self.barra_pesquisa,
+            
+            # 'tags_conclusao': self.tags_sugestoes,
+            'lista_conclusao': self.lista_options_conclusao,
+            'barra_inferior_conclusao': self.barra_inferior_conclusao,
+            'barra_pesquisa_conclusao': self.barra_pesquisa,
+        }
+
+        await carregar_page_now('Atendimento')
 

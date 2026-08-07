@@ -1,7 +1,5 @@
 import flet as ft
 import colors as c
-from backend import fluxo_telas as fx
-from frontend.pages import tela_atendimentos as tra
 from frontend.pages import tela_home as thm
 
 class App:
@@ -21,7 +19,6 @@ class App:
         )
 
         self.tela_home = thm.Tela_Home(page)
-        self.tela_drop = tra.Tela_Atendimento(page)
 
         self.page.fonts = {
             'inter': 'fonts/Inter-VariableFont_opsz,wght.ttf'
