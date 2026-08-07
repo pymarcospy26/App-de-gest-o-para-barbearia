@@ -516,7 +516,7 @@ class AlertDialog_atendimento:
             ]
         )
 
-    async def pages_dialog(self, carregar_page = 'atendimento'):
+    async def pages_dialog(self):
         async def carregar_page_now(titulo_new):
             self.titulo = titulo_new
             self.alertdialog_global.title = ft.Row(
@@ -558,6 +558,137 @@ class AlertDialog_atendimento:
             await carregar_page_now('Conclusão')
             self.alertdialog_global.update()
 
+        def pagamento_select(e):
+            button = e.control
+            state = button.data['ativo']
+            radio = button.data['radio']
+            radio_interno = radio.content
+            icon = button.content.controls[1].controls[0]
+            text = button.content.controls[1].controls[1]
+
+            if state == False:
+                button.data['ativo'] = not button.data['ativo']
+
+                button.border = ft.Border.all(width = 2, color = c.azul_violeta)
+                radio.border = ft.Border.all(width = 2, color = c.azul_violeta)
+                radio_interno.bgcolor = c.azul_violeta
+                icon.color = c.azul_violeta
+                text.color = c.azul_violeta
+                
+                print(f'on {text.value}')
+
+            else:
+                button.data['ativo'] = not button.data['ativo']
+
+                button.border = ft.Border.all(width = 0, color = ft.Colors.TRANSPARENT)
+                radio.border = ft.Border.all(width = 2, color = c.bordas)
+                radio_interno.bgcolor = c.background
+                icon.color = c.sub_textos
+                text.color = c.sub_textos
+
+                print(f'off {text.value}')
+
+            button.update()
+
+        def cards_pagamento_CONCLUSAO(
+            icon = 'triangulo_alerta',
+            text = 'Vazio',
+
+            top = 0, left = 0, right = 0, bottom = 0,
+        ):
+            
+            radio = ft.Container(
+                top = 12,
+                left = 12,
+                width = 30,
+                height = 30,
+                border_radius = 15,
+                bgcolor = c.background,
+                alignment = ft.Alignment.CENTER,
+                border = ft.Border.all(width = 2, color = c.bordas),
+
+                content = ft.Container(
+                    width = 20,
+                    height = 20,
+                    border_radius = 10,
+                    bgcolor = c.bordas
+                )
+            )
+
+            return ft.Container(
+                col = 1,
+                height = 180,
+                bgcolor = c.branco,
+                border_radius = 24,
+                shadow = c.shadow_leve(),
+                on_click = pagamento_select,
+                ink = True,
+
+                width = (
+                    self.page.width - (
+                        ((2 * vg.margin_left) + (2 * self.margin_lateral_interna) + (2 * 12))
+                    )
+                ) / 3,
+
+                # ^ DEVOLVE A LARGURA TOTAL DISPONÍVEL DA TELA DESCONTANDO AS MARGINS E SPAÇOS,
+                # ^ DIVIDE-OS PELA QUANTIDADE DE BOTÕES E SE OBTEM UMA LARGURA IGUAL PARA TODOS
+
+                data = {
+                    'radio': radio,
+                    'ativo': False,
+                },
+
+                margin = ft.Margin(
+                    top = top,
+                    left = left,
+                    right = right,
+                    bottom = bottom
+                ),
+                
+                content = ft.Stack(
+                    height = 140,
+                    alignment = ft.Alignment.CENTER,
+                    
+                    controls = [
+                        radio,
+                                
+                        ft.Column(
+                            top = 45,
+                            bottom = 35,
+                            height = 70,
+                            alignment = ft.MainAxisAlignment.CENTER,
+                            horizontal_alignment = ft.CrossAxisAlignment.CENTER,
+
+                            controls = [
+                                ic.svg_icon(
+                                    icon,
+                                    size = 30, color = c.sub_textos,
+                                )
+
+                                if isinstance(icon, str) else
+
+                                ft.Icon(
+                                    icon = icon,
+                                    size = 30, color = c.sub_textos
+                                ),
+                                
+                                ft.Text(
+                                    value = text,
+                                    size = 16, color = c.sub_textos,
+                                    font_family = 'inter',
+                                ),
+                            ]
+                        ),
+                    ]
+                )
+
+                # ^ CAMINHO PARA ICON: e.control.content.controls[1].controls[0]
+                # ^ CAMINHO PARA TEXT: e.control.content.controls[1].controls[1]
+                # ^ CAMINHO PARA RADIO: e.control.content.controls[0]
+                # ^ CAMINHO PARA RADIO_INTERNO: e.control.content.controls[0].content
+            )
+
+        
         self.lista_options_conclusao = ft.Column(
             spacing = 0,
             expand = True,
@@ -566,120 +697,169 @@ class AlertDialog_atendimento:
             horizontal_alignment = ft.CrossAxisAlignment.CENTER,
 
             controls = [
-                ft.Container(
-                    height = 64,
-                    border_radius = 26,
-                    bgcolor = c.branco,
-                    shadow = c.shadow_leve(),
+                ft.Stack(
+                    height = 74,
                     alignment = ft.Alignment.CENTER,
-                    margin = ft.Margin(left = self.margin_lateral_interna, right = self.margin_lateral_interna),
 
-                    content = ft.Dropdown(
-                        height = 64,
-                        expand = True,
-                        editable = True,
-                        bgcolor = c.branco,
-                        border_radius = 26,
-                        enable_search = True,
-                        color = c.preto_icons,
-                        fill_color = c.branco,
-
-                        hint_text = 'Buscar cliente',
-                        hint_style = ft.TextStyle(
-                            size = 16, color = c.sub_textos,
-                            font_family = 'inter',
-                        ),
-
-                        menu_style = ft.MenuStyle(
+                    controls = [
+                        ft.Container(
+                            left = 0,
+                            right = 0,
+                            expand = True,
                             bgcolor = c.branco,
-                            shape = ft.RoundedRectangleBorder(radius = 26),
-                            shadow_color = ft.Colors.with_opacity(color = c.sombra, opacity = 0.2),
-
-                            max_size = ft.Size(
-                                height = self.page.height * 0.22,
-                                width = self.page.width - ((2 * 16) + (2 * self.margin_lateral_interna))
+                            border_radius = 24,
+                            shadow = c.shadow_leve(),
+                            
+                            margin = ft.Margin(
+                                left = self.margin_lateral_interna,
+                                right = self.margin_lateral_interna
                             ),
+
+                            content = ft.Dropdown(
+                                height = 64,
+                                expand = True,
+                                editable = True,
+                                bgcolor = c.branco,
+                                border_radius = 26,
+                                enable_search = True,
+                                color = c.preto_icons,
+                                fill_color = c.branco,
+
+                                trailing_icon = ic.svg_icon(
+                                    'seta_bottom',
+                                    size = 30, color = c.preto_icons
+                                ),
+
+                                selected_trailing_icon = ic.svg_icon(
+                                    'seta_top',
+                                    size = 30, color = c.preto_icons
+                                ),
+
+                                hint_text = 'Buscar cliente',
+                                hint_style = ft.TextStyle(
+                                    size = 16, color = c.sub_textos,
+                                    font_family = 'inter',
+                                ),
+
+                                menu_style = ft.MenuStyle(
+                                    bgcolor = c.branco,
+                                    shape = ft.RoundedRectangleBorder(radius = 26),
+                                    shadow_color = ft.Colors.with_opacity(color = c.sombra, opacity = 0.2),
+
+                                    max_size = ft.Size(
+                                        height = self.page.height * 0.24,
+                                        width = self.page.width - ((2 * 16) + (2 * self.margin_lateral_interna))
+                                    ),
+                                ),
+
+                                border_color = ft.Colors.TRANSPARENT,
+                                focused_border_color = c.azul_violeta,
+                                content_padding = ft.Padding(left = 50, top = 21, bottom = 21),
+
+                                options = [
+                                    ft.DropdownOption(
+                                        'HeloKit', style = ft.TextStyle(
+                                            size = 16, color = c.sub_textos, font_family = 'inter'
+                                        )
+                                    ),
+                                    
+                                    ft.DropdownOption(
+                                        'HeloKit', style = ft.TextStyle(
+                                            size = 16, color = c.sub_textos, font_family = 'inter'
+                                        )
+                                    ),
+                                    
+                                    ft.DropdownOption(
+                                        'HeloKit', style = ft.TextStyle(
+                                            size = 16, color = c.sub_textos, font_family = 'inter'
+                                        )
+                                    ),
+                                    
+                                    ft.DropdownOption(
+                                        'HeloKit', style = ft.TextStyle(
+                                            size = 16, color = c.sub_textos, font_family = 'inter'
+                                        )
+                                    ),
+                                    
+                                    ft.DropdownOption(
+                                        'HeloKit', style = ft.TextStyle(
+                                            size = 16, color = c.sub_textos, font_family = 'inter'
+                                        )
+                                    ),
+                                    
+                                    ft.DropdownOption(
+                                        'HeloKit', style = ft.TextStyle(
+                                            size = 16, color = c.sub_textos, font_family = 'inter'
+                                        )
+                                    ),
+                                    
+                                    ft.DropdownOption(
+                                        'HeloKit', style = ft.TextStyle(
+                                            size = 16, color = c.sub_textos, font_family = 'inter'
+                                        )
+                                    ),
+                                    
+                                    ft.DropdownOption(
+                                        'HeloKit', style = ft.TextStyle(
+                                            size = 16, color = c.sub_textos, font_family = 'inter'
+                                        )
+                                    ),
+                                    
+                                    ft.DropdownOption(
+                                        'dropdow', style = ft.TextStyle(
+                                            size = 16, color = c.sub_textos, font_family = 'inter'
+                                        )
+                                    ),
+                                ]
+                            )
+                        ),
+                        
+                        ic.svg_icon(
+                            path = 'user',
+                            size = 30, color = c.sub_textos,
+                            left = 38
+                        )
+                    ]
+                ),
+
+                ft.Row(
+                    spacing = 12,
+                    expand = True,
+                    alignment = ft.MainAxisAlignment.START,
+                    vertical_alignment = ft.CrossAxisAlignment.CENTER,
+
+                    controls = [
+                        cards_pagamento_CONCLUSAO(
+                            icon = 'dinheiro', text = 'Dinheiro',
+                            top = vg.margin_top,
+                            left = self.margin_lateral_interna,
                         ),
 
-                        border_color = ft.Colors.TRANSPARENT,
-                        focused_border_color = c.azul_violeta,
-                        content_padding = ft.Padding(left = 22, top = 21, bottom = 21),
+                        cards_pagamento_CONCLUSAO(
+                            icon = ft.Icons.PIX, text = 'Pix',
+                            top = vg.margin_top,
+                        ),
 
-                        options = [
-                            ft.DropdownOption(
-                                ft.Text(
-                                    value = 'Opção Nova',
-                                    margin = ft.Margin(left = 12),
-                                    size = 16, color = c.preto_icons1,
-                                    font_family = 'inter'
-                                )
-                            ),
-                            
-                            ft.DropdownOption(
-                                'HeloKit', style = ft.TextStyle(
-                                    size = 16, color = c.sub_textos, font_family = 'inter'
-                                )
-                            ),
-                            
-                            ft.DropdownOption(
-                                'HeloKit', style = ft.TextStyle(
-                                    size = 16, color = c.sub_textos, font_family = 'inter'
-                                )
-                            ),
-                            
-                            ft.DropdownOption(
-                                'HeloKit', style = ft.TextStyle(
-                                    size = 16, color = c.sub_textos, font_family = 'inter'
-                                )
-                            ),
-                            
-                            ft.DropdownOption(
-                                'HeloKit', style = ft.TextStyle(
-                                    size = 16, color = c.sub_textos, font_family = 'inter'
-                                )
-                            ),
-                            
-                            ft.DropdownOption(
-                                'HeloKit', style = ft.TextStyle(
-                                    size = 16, color = c.sub_textos, font_family = 'inter'
-                                )
-                            ),
-                            
-                            ft.DropdownOption(
-                                'HeloKit', style = ft.TextStyle(
-                                    size = 16, color = c.sub_textos, font_family = 'inter'
-                                )
-                            ),
-                            
-                            ft.DropdownOption(
-                                'HeloKit', style = ft.TextStyle(
-                                    size = 16, color = c.sub_textos, font_family = 'inter'
-                                )
-                            ),
-                            
-                            ft.DropdownOption(
-                                'HeloKit', style = ft.TextStyle(
-                                    size = 16, color = c.sub_textos, font_family = 'inter'
-                                )
-                            ),
-                            
-                            ft.DropdownOption(
-                                'dropdow', style = ft.TextStyle(
-                                    size = 16, color = c.sub_textos, font_family = 'inter'
-                                )
-                            ),
-                        ]
-                    )
+                        cards_pagamento_CONCLUSAO(
+                            icon = 'cartao', text = 'Cartão',
+                            top = vg.margin_top,
+                            right = self.margin_lateral_interna,
+                        ),
+                    ]
                 ),
-                
+
                 ft.Container(
                     expand = True,
                     bgcolor = c.branco,
                     border_radius = 26,
                     shadow = c.shadow_leve(),
                     alignment = ft.Alignment.CENTER,
-                    height = self.page.height * 0.24,
-                    margin = ft.Margin(left = self.margin_lateral_interna, right = self.margin_lateral_interna),
+                    height = self.page.height * 0.5,
+                    margin = ft.Margin(
+                        top = vg.margin_top,
+                        left = self.margin_lateral_interna,
+                        right = self.margin_lateral_interna
+                    ),
 
                     content = ft.Column(
                         spacing = 0,
@@ -689,11 +869,11 @@ class AlertDialog_atendimento:
 
                         controls = []                        
                     )
-                )
+                ),
+
             ]
         
-        )
-                                
+        )                  
         self.barra_inferior_conclusao = ft.Container(
             height = 110,
             bgcolor = c.branco,
