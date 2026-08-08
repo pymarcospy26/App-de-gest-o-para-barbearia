@@ -536,60 +536,7 @@ class AlertDialog_atendimento:
         )
 
     async def pages_dialog(self):
-        def componentes_CONLUSAO(controls = None):
-            def servicos():
-                self.lista_options_conclusao.controls[2].content.controls[1].controls.clear()
-                    
-                for servico in self.servicos_atendimento:
-                    linha_servico = ft.Column(
-                        spacing = 0,
-                        height = 64,
-                        alignment = ft.MainAxisAlignment.CENTER,
-                        horizontal_alignment = ft.CrossAxisAlignment.START,
-                        margin = ft.Margin(left = self.margin_lateral_interna, right = self.margin_lateral_interna),
-
-                        controls = [
-                            ft.Row(
-                                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
-                                vertical_alignment = ft.CrossAxisAlignment.CENTER,
-
-                                controls = [
-                                    ft.Text(
-                                        value = f'{self.servicos_atendimento[servico]['quantidade']}x {servico}',
-                                        size = 16, color = c.preto_icons, font_family = 'inter'
-                                    ),
-
-                                    ft.Text(
-                                        value = f'R$ {self.servicos_atendimento[servico]['total']}',
-                                        size = 16, color = c.preto_icons, font_family = 'inter'
-                                    )
-                                ]
-                            ),
-
-                            ft.Row(
-                                alignment = ft.MainAxisAlignment.START,
-                                vertical_alignment = ft.CrossAxisAlignment.CENTER,
-
-                                controls = [
-                                    ft.Text(
-                                        value = f'Und R$ {self.servicos_atendimento[servico]['valor']}',
-                                        size = 16, color = c.sub_textos, font_family = 'inter'
-                                    )
-                                ]
-                            )
-                        ]
-                    )
-
-                    self.lista_options_conclusao.controls[2].content.controls[1].controls.append(linha_servico)
-
-            functions = {
-                'servicos': lambda: servicos(),
-            }
-
-            if controls is not None:
-                functions[controls]()
-
-        espaco = ft.Column(height = 200)
+        servicos_inseridos = []
         mapa = ['dinheiro/0', 'pix/1', 'cartão/2']
 
         async def carregar_page_now(titulo_new):
@@ -630,26 +577,144 @@ class AlertDialog_atendimento:
             await carregar_page_now('Atendimento')  
             self.alertdialog_global.update()
         async def go_conclusao(e):
-            await asyncio.sleep(0.5)
             self.alertdialog_global.content = self.page_conclusao
             await carregar_page_now('Conclusão')
-            componentes_CONLUSAO(controls = 'servicos')
+            nova_coluna = ft.Column(
+                spacing = 0,
+                expand = True,
+                alignment = ft.MainAxisAlignment.START,
+                horizontal_alignment = ft.CrossAxisAlignment.START,
+            )
+            caminho = self.lista_options_conclusao.controls[2].content
+            lista_antiga = caminho.controls[0]
+            caminho.controls.remove(lista_antiga)
+            for servico in self.servicos_atendimento:
+                print('adicionando linha pra:', servico)
+
+                servicos_inseridos.append(servico)
+                linha_servico = ft.Column(
+                        spacing = 0,
+                        height = 64,
+                        alignment = ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment = ft.CrossAxisAlignment.START,
+                        margin = ft.Margin(left = self.margin_lateral_interna, right = self.margin_lateral_interna),
+    
+                        controls = [
+                            ft.Row(
+                                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+                                vertical_alignment = ft.CrossAxisAlignment.CENTER,
+    
+                                controls = [
+                                    ft.Text(
+                                        value = f'{self.servicos_atendimento[servico]['quantidade']}x {servico}',
+                                        size = 16, color = c.preto_icons, font_family = 'inter'
+                                    ),
+                                    ft.Text(
+                                        value = f'R$ {self.servicos_atendimento[servico]['total']}',
+                                        size = 16, color = c.preto_icons, font_family = 'inter'
+                                    ),
+                                ]
+                            ),
+    
+                            ft.Row(
+                                alignment = ft.MainAxisAlignment.START,
+                                vertical_alignment = ft.CrossAxisAlignment.CENTER,
+                                
+                                controls = [
+                                    ft.Text(
+                                        value = f'Und R$ {self.servicos_atendimento[servico]['valor']}',
+                                        size = 16, color = c.sub_textos, font_family = 'inter'
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                nova_coluna.controls.append(linha_servico)
+            caminho.controls.insert(0, nova_coluna)
+
             self.alertdialog_global.update()
 
+        anterior = {}
+        def conversao_campo(campo):
+            valor = str(campo.value)
+            if valor in ['', 'None']:
+                valor = '0,00'
+            if ',' not in valor and '.' in valor:
+                valor = valor.split('.')
+                if len(valor) >= 2:
+                    if valor[0] == '':
+                        valor = '0' + (',' + valor[-1])
+                    else:
+                        valor = ''.join(valor[:-1]) + (',' + valor[-1])
+                else:
+                    valor = f'{valor[0]},00'
+            else:
+                valor = valor.replace('.', '')
+                valor = valor.split(',')
+                if len(valor) >= 2:
+                    if valor[0] == '':
+                        valor = '0' + (',' + valor[-1])
+                    else:
+                        valor = ''.join(valor[:-1]) + (',' + valor[-1])
+                else:
+                    valor = f'{valor[0]},00'
+            campo.value = valor
+        def change_values_campos_CONCLUSAO(e):
+            campo = e.control
+            conversao_campo(campo)
+            anterior[campo] = float(campo.value.replace(',', '.'))
+            referencia = self.lista_options_conclusao.controls[3].controls[0].controls
+            quantiade_controls = len(referencia)
+            for fields in referencia:
+                if quantiade_controls - len(anterior) > 0:
+                    if fields.controls[0] not in anterior:
+                        fields.controls[0].value = f'{((self.totais - sum(float(anterior[x]) for x in anterior)) / (quantiade_controls - len(anterior))):.2f}'
+                conversao_campo(fields.controls[0])
         def campos_pagamento_CONCLUSAO(button):
             campo = button.data['campo']
 
             if campo in self.lista_options_conclusao.controls[3].controls[0].controls:
                 self.lista_options_conclusao.controls[3].controls[0].controls.remove(campo)
+                anterior.clear()
 
             else:
+                pagamentos_list = []
+                pix_map = {
+                    ('dinheiro', 'cartão'): 1,
+                    ('dinheiro',): 1,
+                    ('cartão',): 0,
+                    (): 0,
+                }
                 for x in  mapa:
                     print('rodou')
+
                     if x.split('/')[0] == button.data['modalidade'].lower():
-                        x = int(x.split('/')[1])
+                        if x.split('/')[0].lower() == 'pix':
+
+                            for pagamentos in self.lista_options_conclusao.controls[3].controls[0].controls:
+                                pagamentos_list.append(pagamentos.data['campo'].lower())
+
+                            for posicao in pix_map:
+                                if posicao == tuple(pagamentos_list):
+                                    x = int(pix_map[posicao])
+
+                        else:
+                            x = int(x.split('/')[1])
+
                         print('stop')
                         break
+
+                print('x:', x)
+                print('tipo:', type(x))
+
+                campo.value = ''
+                
                 self.lista_options_conclusao.controls[3].controls[0].controls.insert(x, campo)
+
+            for campos_on in self.lista_options_conclusao.controls[3].controls[0].controls:
+                quantidade = len(self.lista_options_conclusao.controls[3].controls[0].controls)
+                campos_on.controls[0].value = f'{self.totais / quantidade:.2f}'
+                conversao_campo(campos_on.controls[0])
                 
             self.lista_options_conclusao.controls[3].update()
         def pagamento_select(e):
@@ -692,23 +757,62 @@ class AlertDialog_atendimento:
 
             top = 0, left = 0, right = 0, bottom = 0,
         ):
-            campo = ft.TextField(
-                expand = True,
-                    hint_text = f'Recebido em {text.lower()}',
-                    bgcolor = c.branco,
-                    hint_style = ft.TextStyle(
-                        size = 16, color = c.sub_textos, font_family = 'inter'
-                    ),
-                    text_style = ft.TextStyle(
-                        size = 16, color = c.preto_icons, font_family = 'inter'
-                    ),
-                    content_padding = ft.Padding(top = 21, left = 24, bottom = 21),
-                    focused_border_color = c.lilas_calmo,
-                    border_color = c.bordas,
-                    border_radius = 24,
+            campo = ft.Stack(
+                margin = ft.Margin(
+                    top = vg.margin_top,
+                ),
+                data = {
+                    'campo': text,
+                },
+                controls = [                            
+                    ft.TextField(
+                        expand = True,
+                        hint_text = f'Recebido em {text.lower()}',
+                        bgcolor = c.branco,
 
-                    margin = ft.Margin(top = vg.margin_top, left = self.margin_lateral_interna, right = self.margin_lateral_interna)
-                )
+                        hint_style = ft.TextStyle(
+                            size = 16, color = c.sub_textos, font_family = 'inter'
+                        ),
+                        text_style = ft.TextStyle(
+                            size = 16, color = c.preto_icons, font_family = 'inter'
+                        ),
+
+                        content_padding = ft.Padding(top = 22, left = 50, bottom = 22),
+                        keyboard_type = ft.KeyboardType.NUMBER,
+                        focused_border_color = c.lilas_calmo,
+
+                        border_color = c.bordas,
+                        border_radius = 24,
+
+                        margin = ft.Margin(
+                            left = self.margin_lateral_interna,
+                            right = self.margin_lateral_interna
+                        ),
+
+                        on_blur = change_values_campos_CONCLUSAO
+                    ),
+
+                    ft.Column(
+                        top = 0,
+                        left = 38,
+                        bottom = 0,
+                        alignment = ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment = ft.CrossAxisAlignment.START,
+
+                        controls = [
+                            ic.svg_icon(
+                                icon,
+                                size = 30, color = c.sub_textos
+                            )
+                            if isinstance(icon, str) else
+                            ft.Icon(
+                                icon = icon,
+                                size = 30, color = c.sub_textos
+                            ),
+                        ]
+                    )
+                ]
+            )
             
             radio = ft.Container(
                 top = 12,
