@@ -3,6 +3,7 @@ import banco as bd
 import icons as ic
 import colors as c
 import unicodedata
+import asyncio
 import variaveis_globais as vg
 
 class AlertDialog_atendimento:
@@ -22,6 +23,24 @@ class AlertDialog_atendimento:
 
         self.armazenamento_controles = {}
         self.armazenamento_tags = {}
+
+        self.cliente_cadastrados = [
+            "João Pedro",
+            "Lucas Henrique",
+            "Gabriel Silva",
+            "Matheus Oliveira",
+            "Rafael Costa",
+            "Felipe Santos",
+            "Bruno Almeida",
+            "Carlos Eduardo",
+            "Diego Ferreira",
+            "Vinícius Souza",
+            "Gustavo Lima",
+            "André Luiz",
+            "Thiago Martins",
+            "Leonardo Rocha",
+            "Pedro Henrique",
+        ]
 
         self.alertdialog_global = ft.AlertDialog(
             modal = False,
@@ -517,6 +536,62 @@ class AlertDialog_atendimento:
         )
 
     async def pages_dialog(self):
+        def componentes_CONLUSAO(controls = None):
+            def servicos():
+                self.lista_options_conclusao.controls[2].content.controls[1].controls.clear()
+                    
+                for servico in self.servicos_atendimento:
+                    linha_servico = ft.Column(
+                        spacing = 0,
+                        height = 64,
+                        alignment = ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment = ft.CrossAxisAlignment.START,
+                        margin = ft.Margin(left = self.margin_lateral_interna, right = self.margin_lateral_interna),
+
+                        controls = [
+                            ft.Row(
+                                alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+                                vertical_alignment = ft.CrossAxisAlignment.CENTER,
+
+                                controls = [
+                                    ft.Text(
+                                        value = f'{self.servicos_atendimento[servico]['quantidade']}x {servico}',
+                                        size = 16, color = c.preto_icons, font_family = 'inter'
+                                    ),
+
+                                    ft.Text(
+                                        value = f'R$ {self.servicos_atendimento[servico]['total']}',
+                                        size = 16, color = c.preto_icons, font_family = 'inter'
+                                    )
+                                ]
+                            ),
+
+                            ft.Row(
+                                alignment = ft.MainAxisAlignment.START,
+                                vertical_alignment = ft.CrossAxisAlignment.CENTER,
+
+                                controls = [
+                                    ft.Text(
+                                        value = f'Und R$ {self.servicos_atendimento[servico]['valor']}',
+                                        size = 16, color = c.sub_textos, font_family = 'inter'
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+
+                    self.lista_options_conclusao.controls[2].content.controls[1].controls.append(linha_servico)
+
+            functions = {
+                'servicos': lambda: servicos(),
+            }
+
+            if controls is not None:
+                functions[controls]()
+
+        espaco = ft.Column(height = 200)
+        mapa = ['dinheiro/0', 'pix/1', 'cartão/2']
+
         async def carregar_page_now(titulo_new):
             self.titulo = titulo_new
             self.alertdialog_global.title = ft.Row(
@@ -550,16 +625,36 @@ class AlertDialog_atendimento:
             self.alertdialog_global.content.height = self.page.height * 3 / 4
             self.alertdialog_global.content.width = self.page.width
         async def return_atendimento(e):
+            await asyncio.sleep(0.26)
             self.alertdialog_global.content = self.page_servico
             await carregar_page_now('Atendimento')  
             self.alertdialog_global.update()
         async def go_conclusao(e):
+            await asyncio.sleep(0.5)
             self.alertdialog_global.content = self.page_conclusao
             await carregar_page_now('Conclusão')
+            componentes_CONLUSAO(controls = 'servicos')
             self.alertdialog_global.update()
 
+        def campos_pagamento_CONCLUSAO(button):
+            campo = button.data['campo']
+
+            if campo in self.lista_options_conclusao.controls[3].controls[0].controls:
+                self.lista_options_conclusao.controls[3].controls[0].controls.remove(campo)
+
+            else:
+                for x in  mapa:
+                    print('rodou')
+                    if x.split('/')[0] == button.data['modalidade'].lower():
+                        x = int(x.split('/')[1])
+                        print('stop')
+                        break
+                self.lista_options_conclusao.controls[3].controls[0].controls.insert(x, campo)
+                
+            self.lista_options_conclusao.controls[3].update()
         def pagamento_select(e):
             button = e.control
+            campo = button.data['campo']
             state = button.data['ativo']
             radio = button.data['radio']
             radio_interno = radio.content
@@ -574,6 +669,7 @@ class AlertDialog_atendimento:
                 radio_interno.bgcolor = c.azul_violeta
                 icon.color = c.azul_violeta
                 text.color = c.azul_violeta
+                campos_pagamento_CONCLUSAO(button = button)
                 
                 print(f'on {text.value}')
 
@@ -585,17 +681,34 @@ class AlertDialog_atendimento:
                 radio_interno.bgcolor = c.background
                 icon.color = c.sub_textos
                 text.color = c.sub_textos
+                campos_pagamento_CONCLUSAO(button = button)
 
                 print(f'off {text.value}')
 
             button.update()
-
         def cards_pagamento_CONCLUSAO(
             icon = 'triangulo_alerta',
             text = 'Vazio',
 
             top = 0, left = 0, right = 0, bottom = 0,
         ):
+            campo = ft.TextField(
+                expand = True,
+                    hint_text = f'Recebido em {text.lower()}',
+                    bgcolor = c.branco,
+                    hint_style = ft.TextStyle(
+                        size = 16, color = c.sub_textos, font_family = 'inter'
+                    ),
+                    text_style = ft.TextStyle(
+                        size = 16, color = c.preto_icons, font_family = 'inter'
+                    ),
+                    content_padding = ft.Padding(top = 21, left = 24, bottom = 21),
+                    focused_border_color = c.lilas_calmo,
+                    border_color = c.bordas,
+                    border_radius = 24,
+
+                    margin = ft.Margin(top = vg.margin_top, left = self.margin_lateral_interna, right = self.margin_lateral_interna)
+                )
             
             radio = ft.Container(
                 top = 12,
@@ -611,7 +724,7 @@ class AlertDialog_atendimento:
                     width = 20,
                     height = 20,
                     border_radius = 10,
-                    bgcolor = c.bordas
+                    bgcolor = c.background
                 )
             )
 
@@ -636,6 +749,8 @@ class AlertDialog_atendimento:
                 data = {
                     'radio': radio,
                     'ativo': False,
+                    'modalidade': text,
+                    'campo': campo,
                 },
 
                 margin = ft.Margin(
@@ -687,7 +802,14 @@ class AlertDialog_atendimento:
                 # ^ CAMINHO PARA RADIO: e.control.content.controls[0]
                 # ^ CAMINHO PARA RADIO_INTERNO: e.control.content.controls[0].content
             )
-
+        def atualizar_nome_cliente_CONCLUSAO(e):
+            drop = e.control
+            if drop.value:
+                text = drop.value
+            else:
+                text = 'Cliente ##'
+            self.lista_options_conclusao.controls[2].content.controls[0].controls[0].value = text
+            self.lista_options_conclusao.controls[2].content.controls[0].controls[0].update()
         
         self.lista_options_conclusao = ft.Column(
             spacing = 0,
@@ -747,69 +869,38 @@ class AlertDialog_atendimento:
                                     shadow_color = ft.Colors.with_opacity(color = c.sombra, opacity = 0.2),
 
                                     max_size = ft.Size(
-                                        height = self.page.height * 0.24,
+                                        height = self.page.height * 0.22,
                                         width = self.page.width - ((2 * 16) + (2 * self.margin_lateral_interna))
                                     ),
                                 ),
 
                                 border_color = ft.Colors.TRANSPARENT,
-                                focused_border_color = c.azul_violeta,
+                                focused_border_color = c.lilas_calmo,
                                 content_padding = ft.Padding(left = 50, top = 21, bottom = 21),
+                                on_select = atualizar_nome_cliente_CONCLUSAO,
+                                on_text_change = atualizar_nome_cliente_CONCLUSAO,
 
                                 options = [
                                     ft.DropdownOption(
-                                        'HeloKit', style = ft.TextStyle(
-                                            size = 16, color = c.sub_textos, font_family = 'inter'
+                                        text = cliente_cadastrado,
+                                        style = ft.ButtonStyle(
+                                            bgcolor = {
+                                                ft.ControlState.FOCUSED: c.lilas_calmo,
+                                                ft.ControlState.HOVERED: c.lilas_calmo,
+                                                ft.ControlState.DEFAULT: ft.Colors.TRANSPARENT
+                                            },
+
+                                            color = {
+                                                ft.ControlState.FOCUSED: c.branco,
+                                                ft.ControlState.HOVERED: c.branco,
+                                                ft.ControlState.DEFAULT: c.preto_icons
+                                            },
+
+                                            text_style = ft.TextStyle(size = 16, color = c.preto_icons, font_family = 'inter')
                                         )
-                                    ),
-                                    
-                                    ft.DropdownOption(
-                                        'HeloKit', style = ft.TextStyle(
-                                            size = 16, color = c.sub_textos, font_family = 'inter'
-                                        )
-                                    ),
-                                    
-                                    ft.DropdownOption(
-                                        'HeloKit', style = ft.TextStyle(
-                                            size = 16, color = c.sub_textos, font_family = 'inter'
-                                        )
-                                    ),
-                                    
-                                    ft.DropdownOption(
-                                        'HeloKit', style = ft.TextStyle(
-                                            size = 16, color = c.sub_textos, font_family = 'inter'
-                                        )
-                                    ),
-                                    
-                                    ft.DropdownOption(
-                                        'HeloKit', style = ft.TextStyle(
-                                            size = 16, color = c.sub_textos, font_family = 'inter'
-                                        )
-                                    ),
-                                    
-                                    ft.DropdownOption(
-                                        'HeloKit', style = ft.TextStyle(
-                                            size = 16, color = c.sub_textos, font_family = 'inter'
-                                        )
-                                    ),
-                                    
-                                    ft.DropdownOption(
-                                        'HeloKit', style = ft.TextStyle(
-                                            size = 16, color = c.sub_textos, font_family = 'inter'
-                                        )
-                                    ),
-                                    
-                                    ft.DropdownOption(
-                                        'HeloKit', style = ft.TextStyle(
-                                            size = 16, color = c.sub_textos, font_family = 'inter'
-                                        )
-                                    ),
-                                    
-                                    ft.DropdownOption(
-                                        'dropdow', style = ft.TextStyle(
-                                            size = 16, color = c.sub_textos, font_family = 'inter'
-                                        )
-                                    ),
+                                    )
+
+                                    for cliente_cadastrado in self.cliente_cadastrados
                                 ]
                             )
                         ),
@@ -854,7 +945,7 @@ class AlertDialog_atendimento:
                     border_radius = 26,
                     shadow = c.shadow_leve(),
                     alignment = ft.Alignment.CENTER,
-                    height = self.page.height * 0.5,
+                    height = self.page.height * 0.3,
                     margin = ft.Margin(
                         top = vg.margin_top,
                         left = self.margin_lateral_interna,
@@ -867,10 +958,52 @@ class AlertDialog_atendimento:
                         alignment = ft.MainAxisAlignment.START,
                         horizontal_alignment = ft.CrossAxisAlignment.START,
 
-                        controls = []                        
+                        controls = [
+                            ft.Row(
+                                alignment = ft.MainAxisAlignment.START,
+                                vertical_alignment = ft.CrossAxisAlignment.CENTER,
+                                margin = ft.Margin(
+                                    top = self.margin_lateral_interna,
+                                    left = self.margin_lateral_interna,
+                                    bottom = self.margin_lateral_interna / 2,
+                                ),
+
+                                controls = [
+                                    ft.Text(
+                                        value = 'Cliente ##',
+                                        size = 22, color = c.preto_icons,
+                                        font_family = 'inter', weight = ft.FontWeight.W_500
+                                    )
+                                ]
+                            ),
+
+                            ft.Column(
+                                spacing = 0,
+                                expand = True,
+                                scroll = ft.ScrollMode.AUTO,
+                                alignment = ft.MainAxisAlignment.START,
+                                horizontal_alignment = ft.CrossAxisAlignment.START
+                            )
+                        ]                        
                     )
                 ),
 
+                ft.Column(
+                    expand = True,
+                    alignment = ft.MainAxisAlignment.START,
+                    horizontal_alignment = ft.CrossAxisAlignment.START,
+
+                    controls = [
+                        ft.Column(
+                            spacing = 0,
+                            expand = True,
+                            alignment = ft.MainAxisAlignment.START,
+                            horizontal_alignment = ft.CrossAxisAlignment.START,
+                        ),
+
+                        ft.Column(height = 200)
+                    ]
+                )
             ]
         
         )                  
